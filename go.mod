@@ -1,4 +1,4 @@
-module gitlab.caida.org/CAIDA/avoid/scamper-android
+module github.com/isi-lincoln/scamper-comms
 
 go 1.23.1
 
