@@ -29,15 +29,15 @@ func main() {
 	root.Flags().StringVarP(&format, "format", "f", "json", "format scamper output (json, warts)")
 
 	var scamper = &cobra.Command{
-		Use:   "scamper \"<cmd>\"",
+		Use:   "scamper \"<cmd>\" <fileToWrite>",
 		Short: "connect to a scamper socket",
 		Long:  "scamper -s localhost -p 31337 \"trace -q 1 -w 1 8.8.8.8\"",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Create the address string
 			addr := fmt.Sprintf("%s:%d", server, port)
 
-			err := scamper.SendTrace(addr, args[0], format)
+			err := scamper.SendTrace(addr, args[0], args[1], format)
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -219,7 +219,7 @@ func sendTrace(conn net.Conn, command string) (bool, []byte, error) {
 	return true, data, nil
 }
 
-func SendTrace(addr, command, format string) error {
+func SendTrace(addr, command, fiPath, format string) error {
 	Format = format
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -251,16 +251,9 @@ func SendTrace(addr, command, format string) error {
 		return fmt.Errorf("Trace message failed at parsing")
 	}
 
-	if strings.Contains(format, "wart") {
-		err = ioutil.WriteFile("y.wart", warts, 0644)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = ioutil.WriteFile("out.json", warts, 0644)
-		if err != nil {
-			return err
-		}
+	err = ioutil.WriteFile(fiPath, warts, 0644)
+	if err != nil {
+		return err
 	}
 
 	return nil
