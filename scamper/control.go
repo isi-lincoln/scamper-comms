@@ -219,42 +219,44 @@ func sendTrace(conn net.Conn, command string) (bool, []byte, error) {
 	return true, data, nil
 }
 
-func SendTrace(addr, command, fiPath, format string) error {
+func SendTrace(addr, command, fiPath, format string) (string, error) {
 	Format = format
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer conn.Close()
 
 	ok, err := checkOnline(conn)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !ok {
-		return fmt.Errorf("Failed to recieve correct help message")
+		return "", fmt.Errorf("Failed to recieve correct help message")
 	}
 
 	ok, err = sendFormattingRequest(conn)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !ok {
-		return fmt.Errorf("Failed to recieve OK to format message")
+		return "", fmt.Errorf("Failed to recieve OK to format message")
 	}
 
 	ok, warts, err := sendTrace(conn, command)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !ok {
-		return fmt.Errorf("Trace message failed at parsing")
+		return "", fmt.Errorf("Trace message failed at parsing")
 	}
 
-	err = ioutil.WriteFile(fiPath, warts, 0644)
-	if err != nil {
-		return err
+	if fiPath != "" {
+		err = ioutil.WriteFile(fiPath, warts, 0644)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return nil
+	return string(warts), nil
 }

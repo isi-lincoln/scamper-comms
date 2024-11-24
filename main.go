@@ -14,6 +14,7 @@ var (
 	server    string
 	port      int
 	format    string
+	fiPath    string
 	threshold int
 )
 
@@ -27,19 +28,23 @@ func main() {
 	root.Flags().StringVarP(&server, "server", "s", "localhost", "server scamper is running on")
 	root.Flags().IntVarP(&port, "port", "p", 31337, "scamper daemon port")
 	root.Flags().StringVarP(&format, "format", "f", "json", "format scamper output (json, warts)")
+	root.Flags().StringVarP(&fiPath, "file", "o", "", "write output to a file")
 
 	var scamper = &cobra.Command{
-		Use:   "scamper \"<cmd>\" <fileToWrite>",
+		Use:   "scamper \"<cmd>\"",
 		Short: "connect to a scamper socket",
-		Long:  "scamper -s localhost -p 31337 \"trace -q 1 -w 1 8.8.8.8\"",
+		Long:  "scamper -o out.json -f json -s localhost -p 31337 \"trace -q 1 -w 1 8.8.8.8\"",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Create the address string
 			addr := fmt.Sprintf("%s:%d", server, port)
 
-			err := scamper.SendTrace(addr, args[0], args[1], format)
+			out, err := scamper.SendTrace(addr, args[0], fiPath, format)
 			if err != nil {
 				log.Fatal(err)
+			}
+			if fiPath == "" {
+				log.Info(out)
 			}
 		},
 	}
