@@ -72,6 +72,116 @@ type PFObj struct {
 	Errors []string
 }
 
+func Query(endpoint, apiKey string, identifier, threshold int) (bool, *Response, error) {
+
+	// now we do a lookup on the code
+	endpoint2 := fmt.Sprintf("%s/%d?hops", endpoint, identifier)
+	req2, err := http.NewRequest("GET", endpoint2, nil)
+	if err != nil {
+		return false, nil, err
+	}
+
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("pathfinder-key", apiKey)
+
+	// Send our request
+	client := &http.Client{}
+	resp2, err := client.Do(req2)
+	if err != nil {
+		return false, nil, err
+	}
+	defer resp2.Body.Close()
+
+	//log.Infof("Response code: %d\n", resp2.StatusCode)
+
+	if resp2.StatusCode != http.StatusOK && resp2.StatusCode != http.StatusCreated {
+		return false, nil, fmt.Errorf("Http POST failed with status code: %d", resp2.StatusCode)
+	}
+
+	body2, err := ioutil.ReadAll(resp2.Body)
+	if err != nil {
+		return false, nil, err
+	}
+
+	// TODO: There may not be a response that is annotated
+	// need to detect how to find that,
+
+	var responseData2 *Response
+	err = json.Unmarshal(body2, responseData2)
+	if err != nil {
+		return false, nil, err
+	}
+
+	x := responseData2.Data
+	for _, d := range x {
+		for _, hop := range d.Hops {
+			log.Infof("Hop: %s, Threat: %d", hop.IP, hop.Threat)
+			if hop.Threat > threshold {
+				return true, responseData2, nil
+			}
+		}
+	}
+
+	return false, responseData2, nil
+}
+
+func Submit(endpoint, apiKey string, threshold int, requestData []byte) (bool, int, error) {
+
+	// add expectation of how pathfinder wants json data
+	jsonData := "[{\"data\":" + string(requestData[1:]) + "}]"
+
+	//log.Infof("our data:\n%s", jsonData)
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(jsonData)))
+	if err != nil {
+		return false, 0, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("pathfinder-key", apiKey)
+
+	// Send our request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, 0, err
+	}
+	defer resp.Body.Close()
+
+	//log.Infof("Response code: %d\n", resp.StatusCode)
+
+	// return code is a StatusCreated
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return false, 0, fmt.Errorf("Http POST failed with status code: %d", resp.StatusCode)
+	}
+
+	// The response code is an array of uuids for the traces
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, 0, err
+	}
+
+	// response: {"data":[118140],"errors":[]}
+	responseData := &PFObj{}
+	err = json.Unmarshal(body, &responseData)
+	if err != nil {
+		return false, 0, err
+	}
+
+	//log.Infof("the response: %v", responseData)
+
+	d := responseData.Data
+	code := 0
+	for _, c := range d {
+		code = int(c)
+	}
+	if len(responseData.Errors) > 0 {
+		return false, 0, fmt.Errorf("pathfinder returned error: %v", responseData.Errors)
+	}
+
+	return true, code, nil
+}
+
 func SendRequest(endpoint, apiKey string, threshold int, requestData []byte) (bool, error) {
 
 	/*
