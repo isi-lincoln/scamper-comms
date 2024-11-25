@@ -125,7 +125,7 @@ func Query(endpoint, apiKey string, identifier, threshold int) (bool, *Response,
 	return false, responseData2, nil
 }
 
-func Submit(endpoint, apiKey string, threshold int, requestData []byte) (bool, int, error) {
+func Submit(endpoint, apiKey string, requestData []byte) (bool, int, error) {
 
 	// add expectation of how pathfinder wants json data
 	jsonData := "[{\"data\":" + string(requestData[1:]) + "}]"
