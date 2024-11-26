@@ -219,7 +219,9 @@ func sendTrace(conn net.Conn, command string) (bool, []byte, error) {
 	return true, data, nil
 }
 
-func SendTrace(addr, command, fiPath, format string) (string, error) {
+func RequestTrace(addr, command, fiPath, format string) (string, error) {
+	fields := log.Fields{"dst": addr, "command": command, "filepath": fiPath, "format": format}
+	log.WithFields(fields).Debug("in request")
 	Format = format
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -235,6 +237,8 @@ func SendTrace(addr, command, fiPath, format string) (string, error) {
 		return "", fmt.Errorf("Failed to recieve correct help message")
 	}
 
+	log.WithFields(fields).Debug("scamper control online")
+
 	ok, err = sendFormattingRequest(conn)
 	if err != nil {
 		return "", err
@@ -243,6 +247,8 @@ func SendTrace(addr, command, fiPath, format string) (string, error) {
 		return "", fmt.Errorf("Failed to recieve OK to format message")
 	}
 
+	log.WithFields(fields).Debug("in formatting json")
+
 	ok, warts, err := sendTrace(conn, command)
 	if err != nil {
 		return "", err
@@ -250,6 +256,12 @@ func SendTrace(addr, command, fiPath, format string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("Trace message failed at parsing")
 	}
+
+	if format == "json" {
+		fields["output"] = warts
+	}
+
+	log.WithFields(fields).Debug("finished request")
 
 	if fiPath != "" {
 		err = ioutil.WriteFile(fiPath, warts, 0644)

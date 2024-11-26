@@ -39,7 +39,7 @@ func main() {
 			// Create the address string
 			addr := fmt.Sprintf("%s:%d", server, port)
 
-			out, err := scamper.SendTrace(addr, args[0], fiPath, format)
+			out, err := scamper.RequestTrace(addr, args[0], fiPath, format)
 			if err != nil {
 				log.Fatal(err)
 			}
