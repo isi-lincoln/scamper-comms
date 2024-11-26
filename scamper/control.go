@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -18,8 +18,10 @@ var (
 	Format    string
 )
 
-func checkOnline(conn net.Conn) (bool, error) {
-	log.Infof("In checkOnline 0")
+func checkOnline(conn net.Conn, logger *logrus.Logger) (bool, error) {
+	if logger != nil {
+		logger.Debugf("In checkOnline 0")
+	}
 
 	msg := []byte("help\n")
 	_, err := conn.Write(msg)
@@ -33,12 +35,12 @@ func checkOnline(conn net.Conn) (bool, error) {
 	helpResponse := "ERR XXX: todo\n"
 	resp := string(recv)
 
-	log.Infof("help: %s", resp)
-
 	if resp == helpResponse {
 		return true, nil
 	} else {
-		log.Infof("should have got: %s, instead got: %s\n", helpResponse, resp)
+		if logger != nil {
+			logger.Errorf("should have got: %s, instead got: %s\n", helpResponse, resp)
+		}
 		return false, nil
 	}
 
@@ -58,7 +60,7 @@ func decodeUU(uuencoded []byte) ([]byte, error) {
 	var x []byte
 	x = append(preamble, uuencoded...)
 	x = append(x, ending...)
-	log.Infof("x: %s\n", string(x))
+	//log.Infof("x: %s\n", string(x))
 	/*
 		data, err := uu.Decode(x)
 		if err != nil {
@@ -69,9 +71,11 @@ func decodeUU(uuencoded []byte) ([]byte, error) {
 	return x, nil
 }
 
-func parser(conn net.Conn, resp []byte) ([]int, []byte, error) {
+func parser(conn net.Conn, resp []byte, logger *logrus.Logger) ([]int, []byte, error) {
 
-	log.Infof("in parser\n")
+	if logger != nil {
+		logger.Debugf("in parser\n")
+	}
 
 	c := make([]int, 0)
 	d := make([]byte, 0)
@@ -83,7 +87,9 @@ func parser(conn net.Conn, resp []byte) ([]int, []byte, error) {
 
 	dCounter := 0
 	for l, line := range asLines {
-		log.Infof("%d: %s\n", l, line)
+		if logger != nil {
+			logger.Debugf("%d: %s\n", l, line)
+		}
 		if strings.Contains(line, expectOK) {
 			sp := strings.Split(line, " ")
 			if len(sp) > 1 {
@@ -116,7 +122,9 @@ func parser(conn net.Conn, resp []byte) ([]int, []byte, error) {
 			// set x to current loc
 			x := len([]byte(strings.Join(asLines[:l+1], "\n")))
 
-			log.Infof("Got: %s\n", resp[x:x+b])
+			if logger != nil {
+				logger.Debugf("Got: %s\n", resp[x:x+b])
+			}
 
 			c = append(c, b)
 			var v []byte
@@ -132,12 +140,16 @@ func parser(conn net.Conn, resp []byte) ([]int, []byte, error) {
 		}
 	}
 
-	log.Infof("dCounter: %d\n", dCounter)
+	if logger != nil {
+		logger.Debugf("dCounter: %d\n", dCounter)
+	}
 
 	// assumes only 1 MORE
 	if dCounter >= 0 {
 
-		log.Infof("Calling parser again")
+		if logger != nil {
+			logger.Debug("Calling parser again")
+		}
 
 		// only call this if we didnt read 2 data
 		conn.SetReadDeadline(time.Now().Add(waitDelay))
@@ -149,7 +161,7 @@ func parser(conn net.Conn, resp []byte) ([]int, []byte, error) {
 			return nil, nil, err
 		}
 
-		t, x, err := parser(conn, recv[:m])
+		t, x, err := parser(conn, recv[:m], logger)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -161,10 +173,12 @@ func parser(conn net.Conn, resp []byte) ([]int, []byte, error) {
 	return c, d, nil
 }
 
-func sendFormattingRequest(conn net.Conn) (bool, error) {
+func sendFormattingRequest(conn net.Conn, logger *logrus.Logger) (bool, error) {
 	// Send the message "hello"
 	msg := []byte(fmt.Sprintf("attach format %s\n", Format))
-	log.Infof("format: %s", msg)
+	if logger != nil {
+		logger.Debugf("format: %s", msg)
+	}
 	_, err := conn.Write(msg)
 	if err != nil {
 		return false, err
@@ -178,9 +192,11 @@ func sendFormattingRequest(conn net.Conn) (bool, error) {
 		return false, err
 	}
 
-	log.Infof("recv'd: %s", string(recv[:n]))
+	if logger != nil {
+		logger.Debugf("recv'd: %s", string(recv[:n]))
+	}
 
-	_, _, err = parser(conn, recv[:n])
+	_, _, err = parser(conn, recv[:n], logger)
 	if err != nil {
 		return false, err
 	}
@@ -188,11 +204,13 @@ func sendFormattingRequest(conn net.Conn) (bool, error) {
 	return true, nil
 }
 
-func sendTrace(conn net.Conn, command string) (bool, []byte, error) {
+func sendTrace(conn net.Conn, command string, logger *logrus.Logger) (bool, []byte, error) {
 	// Send the message "hello"
 	msg := []byte(fmt.Sprintf("%s\n", command))
 
-	log.Infof("Sending command: %s", msg)
+	if logger != nil {
+		logger.Debugf("Sending command: %s", msg)
+	}
 
 	_, err := conn.Write(msg)
 	if err != nil {
@@ -207,7 +225,7 @@ func sendTrace(conn net.Conn, command string) (bool, []byte, error) {
 		return false, nil, err
 	}
 
-	x, data, err := parser(conn, recv[:n])
+	x, data, err := parser(conn, recv[:n], logger)
 	if err != nil {
 		return false, nil, err
 	}
@@ -219,9 +237,12 @@ func sendTrace(conn net.Conn, command string) (bool, []byte, error) {
 	return true, data, nil
 }
 
-func RequestTrace(addr, command, fiPath, format string) (string, error) {
-	fields := log.Fields{"dst": addr, "command": command, "filepath": fiPath, "format": format}
-	log.WithFields(fields).Debug("in request")
+func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (string, error) {
+
+	fields := logrus.Fields{"dst": addr, "command": command, "filepath": fiPath, "format": format}
+	if logger != nil {
+		logger.WithFields(fields).Debug("in request")
+	}
 	Format = format
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -229,7 +250,7 @@ func RequestTrace(addr, command, fiPath, format string) (string, error) {
 	}
 	defer conn.Close()
 
-	ok, err := checkOnline(conn)
+	ok, err := checkOnline(conn, logger)
 	if err != nil {
 		return "", err
 	}
@@ -237,9 +258,11 @@ func RequestTrace(addr, command, fiPath, format string) (string, error) {
 		return "", fmt.Errorf("Failed to recieve correct help message")
 	}
 
-	log.WithFields(fields).Debug("scamper control online")
+	if logger != nil {
+		logger.WithFields(fields).Debug("scamper control online")
+	}
 
-	ok, err = sendFormattingRequest(conn)
+	ok, err = sendFormattingRequest(conn, logger)
 	if err != nil {
 		return "", err
 	}
@@ -247,9 +270,11 @@ func RequestTrace(addr, command, fiPath, format string) (string, error) {
 		return "", fmt.Errorf("Failed to recieve OK to format message")
 	}
 
-	log.WithFields(fields).Debug("in formatting json")
+	if logger != nil {
+		logger.WithFields(fields).Debug("in formatting json")
+	}
 
-	ok, warts, err := sendTrace(conn, command)
+	ok, warts, err := sendTrace(conn, command, logger)
 	if err != nil {
 		return "", err
 	}
@@ -261,7 +286,9 @@ func RequestTrace(addr, command, fiPath, format string) (string, error) {
 		fields["output"] = warts
 	}
 
-	log.WithFields(fields).Debug("finished request")
+	if logger != nil {
+		logger.WithFields(fields).Debug("finished request")
+	}
 
 	if fiPath != "" {
 		err = ioutil.WriteFile(fiPath, warts, 0644)

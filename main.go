@@ -6,6 +6,7 @@ import (
 
 	"github.com/isi-lincoln/scamper-comms/pathfinder"
 	"github.com/isi-lincoln/scamper-comms/scamper"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,7 @@ var (
 	format    string
 	fiPath    string
 	threshold int
+	logLevel  string
 )
 
 func main() {
@@ -29,17 +31,24 @@ func main() {
 	root.Flags().IntVarP(&port, "port", "p", 31337, "scamper daemon port")
 	root.Flags().StringVarP(&format, "format", "f", "json", "format scamper output (json, warts)")
 	root.Flags().StringVarP(&fiPath, "file", "o", "", "write output to a file")
+	root.Flags().StringVarP(&logLevel, "loglevel", "l", "debug", "what level of debugging")
 
 	var scamper = &cobra.Command{
 		Use:   "scamper \"<cmd>\"",
 		Short: "connect to a scamper socket",
 		Long:  "scamper -o out.json -f json -s localhost -p 31337 \"trace -q 1 -w 1 8.8.8.8\"",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Create the address string
 			addr := fmt.Sprintf("%s:%d", server, port)
 
-			out, err := scamper.RequestTrace(addr, args[0], fiPath, format)
+			logger := logrus.New()
+			logger.SetLevel(logrus.InfoLevel)
+			if logLevel == "debug" {
+				logger.SetLevel(logrus.DebugLevel)
+			}
+
+			out, err := scamper.RequestTrace(addr, args[0], fiPath, format, logger)
 			if err != nil {
 				log.Fatal(err)
 			}
