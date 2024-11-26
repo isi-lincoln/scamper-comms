@@ -127,8 +127,7 @@ func Query(endpoint, apiKey string, identifier, threshold int) (bool, *Response,
 
 func Submit(endpoint, apiKey string, requestData []byte) (bool, int, error) {
 
-	// add expectation of how pathfinder wants json data
-	jsonData := "[{\"data\":" + string(requestData[1:]) + "}]"
+	jsonData := "[{\"data\":" + string(requestData) + "}]"
 
 	//log.Infof("our data:\n%s", jsonData)
 
