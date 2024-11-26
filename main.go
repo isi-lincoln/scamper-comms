@@ -53,7 +53,7 @@ func main() {
 				log.Fatal(err)
 			}
 			if fiPath == "" {
-				log.Info(out)
+				log.Infof("%#v", out)
 			}
 		},
 	}

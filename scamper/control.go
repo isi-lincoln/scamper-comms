@@ -2,6 +2,7 @@ package scamper
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -17,6 +18,73 @@ var (
 	buffer    int = 4096
 	Format    string
 )
+
+/* LLM Generated */
+
+type Tx struct {
+	Sec   int    `json:"sec"`
+	Usec  int    `json:"usec"`
+	Ftime string `json:"ftime,omitempty"`
+}
+
+type MPLSLabel struct {
+	MPLSTTL   int `json:"mpls_ttl"`
+	MPLSS     int `json:"mpls_s"`
+	MPLSEXP   int `json:"mpls_exp"`
+	MPLSLabel int `json:"mpls_label"`
+}
+
+type ICMPExt struct {
+	IECN       int         `json:"ie_cn"`
+	IECT       int         `json:"ie_ct"`
+	IEDL       int         `json:"ie_dl"`
+	MPLSLabels []MPLSLabel `json:"mpls_labels"`
+}
+
+type Hop struct {
+	Addr      string    `json:"addr"`
+	ProbeTTL  int       `json:"probe_ttl"`
+	ProbeID   int       `json:"probe_id"`
+	ProbeSize int       `json:"probe_size"`
+	Tx        Tx        `json:"tx"`
+	RTT       float64   `json:"rtt"`
+	ReplyTTL  int       `json:"reply_ttl"`
+	ReplyTOS  int       `json:"reply_tos"`
+	ReplyIPID int       `json:"reply_ipid"`
+	ReplySize int       `json:"reply_size"`
+	ICMPType  int       `json:"icmp_type"`
+	ICMPCode  int       `json:"icmp_code"`
+	ICMPQTTL  int       `json:"icmp_q_ttl"`
+	ICMPQIPL  int       `json:"icmp_q_ipl"`
+	ICMPQTOS  int       `json:"icmp_q_tos"`
+	ICMPExts  []ICMPExt `json:"icmpext,omitempty"`
+}
+
+type Trace struct {
+	Type       string `json:"type"`
+	Version    string `json:"version"`
+	UserID     int    `json:"userid"`
+	Method     string `json:"method"`
+	Src        string `json:"src"`
+	Dst        string `json:"dst"`
+	Sport      int    `json:"sport"`
+	Dport      int    `json:"dport"`
+	StopReason string `json:"stop_reason"`
+	StopData   int    `json:"stop_data"`
+	Start      Tx     `json:"start"`
+	HopCount   int    `json:"hop_count"`
+	Attempts   int    `json:"attempts"`
+	HopLimit   int    `json:"hoplimit"`
+	FirstHop   int    `json:"firsthop"`
+	Wait       int    `json:"wait"`
+	WaitProbe  int    `json:"wait_probe"`
+	TOS        int    `json:"tos"`
+	ProbeSize  int    `json:"probe_size"`
+	ProbeCount int    `json:"probe_count"`
+	Hops       []Hop  `json:"hops"`
+}
+
+/* fin */
 
 func checkOnline(conn net.Conn, logger *logrus.Logger) (bool, error) {
 	if logger != nil {
@@ -174,7 +242,6 @@ func parser(conn net.Conn, resp []byte, logger *logrus.Logger) ([]int, []byte, e
 }
 
 func sendFormattingRequest(conn net.Conn, logger *logrus.Logger) (bool, error) {
-	// Send the message "hello"
 	msg := []byte(fmt.Sprintf("attach format %s\n", Format))
 	if logger != nil {
 		logger.Debugf("format: %s", msg)
@@ -205,7 +272,6 @@ func sendFormattingRequest(conn net.Conn, logger *logrus.Logger) (bool, error) {
 }
 
 func sendTrace(conn net.Conn, command string, logger *logrus.Logger) (bool, []byte, error) {
-	// Send the message "hello"
 	msg := []byte(fmt.Sprintf("%s\n", command))
 
 	if logger != nil {
@@ -240,7 +306,7 @@ func sendTrace(conn net.Conn, command string, logger *logrus.Logger) (bool, []by
 	return true, data[1:], nil
 }
 
-func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (string, error) {
+func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (*Trace, error) {
 
 	fields := logrus.Fields{"dst": addr, "command": command, "filepath": fiPath, "format": format}
 	if logger != nil {
@@ -249,16 +315,16 @@ func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (
 	Format = format
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer conn.Close()
 
 	ok, err := checkOnline(conn, logger)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !ok {
-		return "", fmt.Errorf("Failed to recieve correct help message")
+		return nil, fmt.Errorf("Failed to recieve correct help message")
 	}
 
 	if logger != nil {
@@ -267,10 +333,10 @@ func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (
 
 	ok, err = sendFormattingRequest(conn, logger)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !ok {
-		return "", fmt.Errorf("Failed to recieve OK to format message")
+		return nil, fmt.Errorf("Failed to recieve OK to format message")
 	}
 
 	if logger != nil {
@@ -279,26 +345,32 @@ func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (
 
 	ok, warts, err := sendTrace(conn, command, logger)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !ok {
-		return "", fmt.Errorf("Trace message failed at parsing")
+		return nil, fmt.Errorf("Trace message failed at parsing")
 	}
 
+	var trace *Trace
 	if format == "json" {
 		fields["output"] = warts
-	}
+		if logger != nil {
+			logger.WithFields(fields).Debug("finished request")
+		}
 
-	if logger != nil {
-		logger.WithFields(fields).Debug("finished request")
+		err := json.Unmarshal([]byte(warts), &trace)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	if fiPath != "" {
 		err = ioutil.WriteFile(fiPath, warts, 0644)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
-	return string(warts), nil
+	return trace, nil
 }
