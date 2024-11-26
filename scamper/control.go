@@ -229,12 +229,15 @@ func sendTrace(conn net.Conn, command string, logger *logrus.Logger) (bool, []by
 	if err != nil {
 		return false, nil, err
 	}
+
 	// simplify just return the first
 	if len(x) > 1 {
-		return true, data[:x[0]], nil
+
+		// scamper returns a newline before the json for some reason
+		return true, data[1:x[0]], nil
 	}
 
-	return true, data, nil
+	return true, data[1:], nil
 }
 
 func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (string, error) {
