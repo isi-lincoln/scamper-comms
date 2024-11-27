@@ -77,6 +77,10 @@ type Response struct {
 	Errors     []string `json:"errors"`
 }
 
+type Root struct {
+	Data Data `json:"data"`
+}
+
 /* Fin */
 
 type PFObj struct {
@@ -151,11 +155,22 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 
 	jsonData := "[{\"data\":" + string(requestData) + "}]"
 
-	if logger != nil {
-		logger.Debugf("Data: '%s'", jsonData)
+	var roots []Root
+	err := json.Unmarshal([]byte(jsonData), &roots)
+	if err != nil {
+		return false, 0, err
 	}
 
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(jsonData)))
+	backToByte, err := json.Marshal(roots)
+	if err != nil {
+		return false, 0, err
+	}
+
+	if logger != nil {
+		logger.Debugf("Endpoint: %s  || Data: %#v", endpoint, roots)
+	}
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(backToByte))
 	if err != nil {
 		return false, 0, err
 	}
