@@ -76,7 +76,13 @@ func main() {
 				log.Fatalf("error reading file: %v", err)
 			}
 
-			migrate, err := pathfinder.SendRequest(defaultEndpoint, args[0], threshold, requestData)
+			logger := logrus.New()
+			logger.SetLevel(logrus.InfoLevel)
+			if logLevel == "debug" {
+				logger.SetLevel(logrus.DebugLevel)
+			}
+
+			migrate, err := pathfinder.SendRequest(defaultEndpoint, args[0], threshold, requestData, logger)
 			if err != nil {
 				log.Fatal(err)
 			}
