@@ -353,7 +353,6 @@ func RequestTrace(addr, command, fiPath, format string, logger *logrus.Logger) (
 
 	var trace *Trace
 	if format == "json" {
-		fields["output"] = warts
 		if logger != nil {
 			logger.WithFields(fields).Debug("finished request")
 		}

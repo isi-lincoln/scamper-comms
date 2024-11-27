@@ -33,7 +33,16 @@ type Organization struct {
 
 type Reserved struct {
 	Name    string `json:"name"`
-	Network string `json:"network"`
+	Network string `json:"nework"`
+}
+
+type ArkPing struct {
+	VP  string  `json:"vp"`
+	RTT float64 `json:"rtt"`
+}
+
+type Geo struct {
+	Method string `json:"method"`
 }
 
 type Hop struct {
@@ -43,6 +52,9 @@ type Hop struct {
 	Country      Country      `json:"country,omitempty"`
 	Organization Organization `json:"organization"`
 	Reserved     Reserved     `json:"reserved,omitempty"`
+	ArkPing      ArkPing      `json:"arkping,omitempty"`
+	Geo          Geo          `json:"geo,omitempty"`
+	Hostname     string       `json:"hostname,omitempty"`
 	Threat       int          `json:"threat"`
 }
 
@@ -73,7 +85,6 @@ type PFObj struct {
 }
 
 func Query(endpoint, apiKey string, identifier, threshold int, logger *logrus.Logger) (bool, *Response, error) {
-
 	// now we do a lookup on the code
 	endpoint2 := fmt.Sprintf("%s/%d?hops", endpoint, identifier)
 	req2, err := http.NewRequest("GET", endpoint2, nil)
@@ -107,8 +118,11 @@ func Query(endpoint, apiKey string, identifier, threshold int, logger *logrus.Lo
 
 	// TODO: There may not be a response that is annotated
 	// need to detect how to find that,
+	if logger != nil {
+		logger.Debugf("pathfinder: %s", body2)
+	}
 
-	var responseData2 *Response
+	responseData2 := &Response{}
 	err = json.Unmarshal(body2, responseData2)
 	if err != nil {
 		return false, nil, err
@@ -197,108 +211,22 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 
 func SendRequest(endpoint, apiKey string, threshold int, requestData []byte, logger *logrus.Logger) (bool, error) {
 
-	/*
-		requestData, err := ioutil.ReadFile(inFile)
-		if err != nil {
-			return false, err
-		}
-	*/
+	ok, code, err := Submit(endpoint, apiKey, requestData, logger)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, fmt.Errorf("got a bad value: %d", code)
+	}
 
-	// add expectation of how pathfinder wants json data
-	jsonData := "[{\"data\":" + string(requestData[1:]) + "}]"
-
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(jsonData)))
+	ok, resp, err := Query(endpoint, apiKey, code, threshold, logger)
 	if err != nil {
 		return false, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("pathfinder-key", apiKey)
-
-	// Send our request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	// return code is a StatusCreated
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return false, fmt.Errorf("Http POST failed with status code: %d", resp.StatusCode)
+	if logger != nil {
+		logger.Debugf("Resp: %#v", resp)
 	}
 
-	// The response code is an array of uuids for the traces
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return false, err
-	}
-
-	// response: {"data":[118140],"errors":[]}
-	responseData := &PFObj{}
-	err = json.Unmarshal(body, &responseData)
-	if err != nil {
-		return false, err
-	}
-
-	d := responseData.Data
-	code := 0
-	for _, c := range d {
-		code = int(c)
-	}
-	if len(responseData.Errors) > 0 {
-		return false, fmt.Errorf("pathfinder returned error: %v", responseData.Errors)
-	}
-
-	// Now we've gotten a response id, look it up
-
-	// now we do a lookup on the code
-	endpoint2 := fmt.Sprintf("%s/%d?hops", endpoint, code)
-	req2, err := http.NewRequest("GET", endpoint2, nil)
-	if err != nil {
-		return false, err
-	}
-
-	req2.Header.Set("Content-Type", "application/json")
-	req2.Header.Set("pathfinder-key", apiKey)
-
-	// Send our request
-	client = &http.Client{}
-	resp2, err := client.Do(req2)
-	if err != nil {
-		return false, err
-	}
-	defer resp2.Body.Close()
-
-	if resp2.StatusCode != http.StatusOK && resp2.StatusCode != http.StatusCreated {
-		return false, fmt.Errorf("Http POST failed with status code: %d", resp2.StatusCode)
-	}
-
-	body2, err := ioutil.ReadAll(resp2.Body)
-	if err != nil {
-		return false, err
-	}
-
-	// TODO: There may not be a response that is annotated
-	// need to detect how to find that,
-
-	var responseData2 Response
-	err = json.Unmarshal(body2, &responseData2)
-	if err != nil {
-		return false, err
-	}
-
-	x := responseData2.Data
-	for _, d := range x {
-		for _, hop := range d.Hops {
-			if logger != nil {
-				logger.Debugf("Hop: %s, Threat: %d", hop.IP, hop.Threat)
-			}
-			if hop.Threat > threshold {
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil
+	return ok, nil
 }

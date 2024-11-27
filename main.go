@@ -29,8 +29,6 @@ func main() {
 
 	root.Flags().StringVarP(&server, "server", "s", "localhost", "server scamper is running on")
 	root.Flags().IntVarP(&port, "port", "p", 31337, "scamper daemon port")
-	root.Flags().StringVarP(&format, "format", "f", "json", "format scamper output (json, warts)")
-	root.Flags().StringVarP(&fiPath, "file", "o", "", "write output to a file")
 	root.Flags().StringVarP(&logLevel, "loglevel", "l", "debug", "what level of debugging")
 
 	var scamper = &cobra.Command{
@@ -58,6 +56,8 @@ func main() {
 		},
 	}
 	root.AddCommand(scamper)
+	scamper.Flags().StringVarP(&format, "format", "f", "json", "format scamper output (json, warts)")
+	scamper.Flags().StringVarP(&fiPath, "output", "o", "", "write output to a file")
 
 	var pathfinder = &cobra.Command{
 		Use:   "pathfinder <api key> <file>",
