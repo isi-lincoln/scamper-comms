@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	waitDelay     = 5 * time.Second
+	waitDelay     = 60 * time.Second // ~ 60 hops ish
 	buffer    int = 4096
 	Format    string
 )
