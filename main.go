@@ -82,14 +82,14 @@ func main() {
 				logger.SetLevel(logrus.DebugLevel)
 			}
 
-			migrate, err := pathfinder.SendRequest(defaultEndpoint, args[0], requestData, logger)
+			ready, err := pathfinder.SendRequest(defaultEndpoint, args[0], requestData, logger)
 			if err != nil {
 				log.Fatal(err)
 			}
-			if migrate {
-				log.Infof("Threat threhold met: migrating")
+			if ready {
+				log.Infof("You can query endpoint")
 			} else {
-				log.Infof("Path is safe")
+				log.Infof("Endpoint hasnt finished querying")
 			}
 		},
 	}
