@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -180,6 +181,15 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("pathfinder-key", apiKey)
+
+	if logger.GetLevel() == logrus.DebugLevel {
+		reqDump, err := httputil.DumpRequestOut(req, true)
+		if err != nil {
+			logger.Debugf("Error dumping request: %v\n", err)
+			return false, 0, err
+		}
+		logger.Debugf("HTTP Request:\n%s\n", string(reqDump))
+	}
 
 	// Send our request
 	client := &http.Client{}

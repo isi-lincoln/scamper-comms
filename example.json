@@ -1,0 +1,48 @@
+{
+  "type": "trace",
+  "version": "0.1",
+  "userid": 0,
+  "method": "udp-paris",
+  "src": "10.10.0.11",
+  "dst": "10.11.0.100",
+  "sport": 50690,
+  "dport": 33435,
+  "stop_reason": "COMPLETED",
+  "stop_data": 0,
+  "start": {
+    "sec": 1732656053,
+    "usec": 51295,
+    "ftime": "2024-11-26 21:20:53"
+  },
+  "hop_count": 1,
+  "attempts": 1,
+  "hoplimit": 0,
+  "firsthop": 1,
+  "wait": 1,
+  "wait_probe": 0,
+  "tos": 0,
+  "probe_size": 44,
+  "probe_count": 1,
+  "hops": [
+    {
+      "addr": "10.11.0.100",
+      "probe_ttl": 1,
+      "probe_id": 1,
+      "probe_size": 44,
+      "tx": {
+        "sec": 1732656053,
+        "usec": 51303
+      },
+      "rtt": 0.381,
+      "reply_ttl": 64,
+      "reply_tos": 192,
+      "reply_ipid": 45009,
+      "reply_size": 72,
+      "icmp_type": 3,
+      "icmp_code": 3,
+      "icmp_q_ttl": 1,
+      "icmp_q_ipl": 44,
+      "icmp_q_tos": 0
+    }
+  ]
+}
