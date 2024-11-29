@@ -82,7 +82,7 @@ func main() {
 				logger.SetLevel(logrus.DebugLevel)
 			}
 
-			migrate, err := pathfinder.SendRequest(defaultEndpoint, args[0], threshold, requestData, logger)
+			migrate, err := pathfinder.SendRequest(defaultEndpoint, args[0], requestData, logger)
 			if err != nil {
 				log.Fatal(err)
 			}

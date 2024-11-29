@@ -88,7 +88,7 @@ type PFObj struct {
 	Errors []string
 }
 
-func Query(endpoint, apiKey string, identifier, threshold int, logger *logrus.Logger) (bool, *Response, error) {
+func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger) (bool, *Response, error) {
 	// now we do a lookup on the code
 	endpoint2 := fmt.Sprintf("%s/%d?hops", endpoint, identifier)
 	req2, err := http.NewRequest("GET", endpoint2, nil)
@@ -120,8 +120,6 @@ func Query(endpoint, apiKey string, identifier, threshold int, logger *logrus.Lo
 		return false, nil, err
 	}
 
-	// TODO: There may not be a response that is annotated
-	// need to detect how to find that,
 	if logger != nil {
 		logger.Debugf("pathfinder: %s", body2)
 	}
@@ -136,19 +134,24 @@ func Query(endpoint, apiKey string, identifier, threshold int, logger *logrus.Lo
 		logger.Debugf("Response: %v", responseData2)
 	}
 
-	x := responseData2.Data
-	for _, d := range x {
+	// TODO: it would be better if pathfinder set complete: true when it was done
+	// but it doesnt.
+	hops := 0
+	for _, d := range responseData2.Data {
 		for _, hop := range d.Hops {
 			if logger != nil {
 				logger.Debugf("Hop: %s, Threat: %d", hop.IP, hop.Threat)
 			}
-			if hop.Threat > threshold {
-				return true, responseData2, nil
-			}
 		}
+		hops = hops + len(d.Hops)
 	}
 
-	return false, responseData2, nil
+	if hops == 0 {
+		return false, responseData2, nil
+	}
+
+	// we have atleast 1 hop somewhere
+	return true, responseData2, nil
 }
 
 func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) (bool, int, error) {
@@ -224,7 +227,7 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 	return true, code, nil
 }
 
-func SendRequest(endpoint, apiKey string, threshold int, requestData []byte, logger *logrus.Logger) (bool, error) {
+func SendRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) (bool, error) {
 
 	ok, code, err := Submit(endpoint, apiKey, requestData, logger)
 	if err != nil {
@@ -234,7 +237,7 @@ func SendRequest(endpoint, apiKey string, threshold int, requestData []byte, log
 		return false, fmt.Errorf("got a bad value: %d", code)
 	}
 
-	ok, resp, err := Query(endpoint, apiKey, code, threshold, logger)
+	ok, resp, err := Query(endpoint, apiKey, code, logger)
 	if err != nil {
 		return false, err
 	}
