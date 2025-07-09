@@ -137,6 +137,10 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 		return false, 0, err
 	}
 
+	if logger != nil {
+		logger.Debugf("Response:\n%s", string(body))
+	}
+
 	// response: {"data":[118140],"errors":[]}
 	responseData := &objects.PFObj{}
 	err = json.Unmarshal(body, &responseData)
