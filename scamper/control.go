@@ -16,7 +16,7 @@ import (
 
 var (
 	waitDelay     = 60 * time.Second // ~ 60 hops ish
-	buffer    int = 4096
+	buffer    int = 262144           // 256k
 	Format    string
 )
 
@@ -125,6 +125,10 @@ func parser(conn net.Conn, resp []byte, logger *logrus.Logger) ([]int, []byte, e
 			x := len([]byte(strings.Join(asLines[:l+1], "\n")))
 
 			if logger != nil {
+				if x+b > len(resp) {
+					logger.Errorf("Told %d more bytes, but buffer too smaller!", x+b)
+					return nil, nil, fmt.Errorf("scamper says bytes (%d) more than buffer (%d)", b, resp)
+				}
 				logger.Debugf("Got: %s\n", resp[x:x+b])
 			}
 
@@ -161,6 +165,9 @@ func parser(conn net.Conn, resp []byte, logger *logrus.Logger) ([]int, []byte, e
 		m, err := conn.Read(recv)
 		if err != nil {
 			return nil, nil, err
+		}
+		if m > buffer {
+			return nil, nil, fmt.Errorf("read more than the buffer")
 		}
 
 		t, x, err := parser(conn, recv[:m], logger)
