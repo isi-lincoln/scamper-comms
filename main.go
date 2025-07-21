@@ -17,6 +17,7 @@ var (
 	format    string
 	fiPath    string
 	threshold int
+	ignoreCerts bool
 	logLevel  string
 )
 
@@ -82,7 +83,7 @@ func main() {
 				logger.SetLevel(logrus.DebugLevel)
 			}
 
-			ready, err := pathfinder.SendRequest(defaultEndpoint, args[0], requestData, logger)
+			ready, err := pathfinder.SendRequest(defaultEndpoint, args[0], requestData, logger, ignoreCerts)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -94,6 +95,7 @@ func main() {
 		},
 	}
 	pathfinder.Flags().IntVarP(&threshold, "threshold", "t", 5, "threshold of the threat level")
+	pathfinder.Flags().BoolVarP(&ignoreCerts, "ignore-certs", "i", false, "ignore pathfinder server certificates")
 	root.AddCommand(pathfinder)
 
 	err := root.Execute()

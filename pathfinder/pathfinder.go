@@ -7,12 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
+	"crypto/tls"
 
 	"github.com/isi-lincoln/scamper-comms/objects"
 	"github.com/sirupsen/logrus"
 )
 
-func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger) (bool, *objects.Response, error) {
+func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger, ignoreCerts bool) (bool, *objects.Response, error) {
 	// now we do a lookup on the code
 	endpoint2 := fmt.Sprintf("%s/%d?hops", endpoint, identifier)
 	req2, err := http.NewRequest("GET", endpoint2, nil)
@@ -28,7 +29,13 @@ func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger) (bool
 	req2.Header.Set("pathfinder-key", apiKey)
 
 	// Send our request
-	client := &http.Client{}
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: ignoreCerts,
+			},
+		},
+	}
 	resp2, err := client.Do(req2)
 	if err != nil {
 		return false, nil, err
@@ -78,7 +85,7 @@ func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger) (bool
 	return true, responseData2, nil
 }
 
-func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) (bool, int, error) {
+func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, int, error) {
 
 	jsonData := "[{\"data\":" + string(requestData) + "}]"
 
@@ -115,7 +122,13 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 	}
 
 	// Send our request
-	client := &http.Client{}
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: ignoreCerts,
+			},
+		},
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, 0, err
@@ -164,9 +177,9 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) 
 	return true, code, nil
 }
 
-func SendRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Logger) (bool, error) {
+func SendRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, error) {
 
-	ok, code, err := Submit(endpoint, apiKey, requestData, logger)
+	ok, code, err := Submit(endpoint, apiKey, requestData, logger, ignoreCerts)
 	if err != nil {
 		return false, err
 	}
@@ -174,7 +187,7 @@ func SendRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Log
 		return false, fmt.Errorf("got a bad value: %d", code)
 	}
 
-	ok, resp, err := Query(endpoint, apiKey, code, logger)
+	ok, resp, err := Query(endpoint, apiKey, code, logger, ignoreCerts)
 	if err != nil {
 		return false, err
 	}
