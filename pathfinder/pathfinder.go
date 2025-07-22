@@ -71,9 +71,15 @@ func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger, ignor
 	for _, d := range responseData2.Data {
 		for _, hop := range d.Hops {
 			if logger != nil {
-				logger.Debugf(
-					"Hop: %s, Threat: %d", hop.IP, *hop.Threat,
-				)
+				if hop.Threat != nil {
+					logger.Debugf(
+						"Hop: %s, Threat: %d", hop.IP, *hop.Threat,
+					)
+				} else {
+					logger.Debugf(
+						"Hop: %s, Threat: 0", hop.IP,
+					)
+				}
 			}
 		}
 		hops = hops + len(d.Hops)
