@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/isi-lincoln/scamper-comms/pathfinder"
 	"github.com/isi-lincoln/scamper-comms/scamper"
@@ -12,14 +14,15 @@ import (
 )
 
 var (
-	server      string
-	port        int
-	format      string
-	fiPath      string
-	threshold   int
-	ignoreCerts bool
-	traceSetID  int
-	logLevel    string
+	server        string
+	port          int
+	format        string
+	fiPath        string
+	threshold     int
+	ignoreCerts   bool
+	srcAnnotation string
+	traceSetID    int
+	logLevel      string
 )
 
 func main() {
@@ -75,8 +78,9 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			defaultTraceRouteEndpoint := "https://api.pathfinder.caida.org/v1/traceroutes"
 			withTraceSet := fmt.Sprintf("%s?traceset_id=%d", defaultTraceRouteEndpoint, traceSetID)
+			apikey := args[0]
 
-			if args[0] == "" {
+			if apikey == "" {
 				log.Fatalf("pathfinder requires an api key\n")
 			}
 
@@ -96,24 +100,62 @@ func main() {
 				ep = withTraceSet
 			}
 
-			ready, err := pathfinder.SendTraceRouteRequest(
-				ep, args[0], requestData, logger, ignoreCerts,
+			_, code, err := pathfinder.SubmitTraceRoute(
+				ep, apikey, srcAnnotation, requestData, logger, ignoreCerts,
 			)
-
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			if ready {
-				log.Infof("You can query endpoint")
-			} else {
-				log.Infof("Endpoint hasnt finished querying")
+			ready, resp, err := pathfinder.Query(defaultTraceRouteEndpoint, apikey, code, logger, ignoreCerts)
+			if err != nil {
+				log.Fatal(err)
 			}
+			if !ready {
+				ticker := time.NewTicker(10 * time.Second)
+				timeoutTimer := time.NewTimer(time.Minute)
+
+				defer ticker.Stop()
+				defer timeoutTimer.Stop()
+
+				for {
+					select {
+					case <-ticker.C:
+						ready, resp, err = pathfinder.Query(
+							defaultTraceRouteEndpoint,
+							apikey,
+							code,
+							logger,
+							ignoreCerts,
+						)
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						if ready {
+							break
+						} else {
+							log.Infof("query not ready yet.")
+						}
+					case <-timeoutTimer.C:
+						log.Fatal("request timed out")
+					}
+				}
+
+			}
+
+			jsonData, err := json.MarshalIndent(resp, "", "  ")
+			if err != nil {
+				log.Error("Failed to marshal response:", err)
+			} else {
+				log.Infof("Response:", string(jsonData))
+			}
+
 		},
 	}
 	traceroute.Flags().BoolVarP(&ignoreCerts, "ignore-certs", "i", false, "ignore pathfinder server certificates")
 	traceroute.Flags().IntVarP(&threshold, "threshold", "t", 5, "threshold of the threat level")
 	traceroute.Flags().IntVarP(&traceSetID, "traceset", "s", 0, "submit traceroute to a traceset")
+	traceroute.Flags().StringVarP(&srcAnnotation, "annotation", "a", "", "annotate the name of the source of the traceroute")
 	pfCmd.AddCommand(traceroute)
 
 	var traceSet = &cobra.Command{
@@ -149,6 +191,7 @@ func main() {
 				args[1],
 				tags,
 				logger,
+				ignoreCerts,
 			)
 			if err != nil {
 				log.Fatal(err)
@@ -157,6 +200,7 @@ func main() {
 			log.Infof("traceset id created: %d", traceId)
 		},
 	}
+	traceSet.Flags().BoolVarP(&ignoreCerts, "ignore-certs", "i", false, "ignore pathfinder server certificates")
 	pfCmd.AddCommand(traceSet)
 
 	err := root.Execute()

@@ -9,70 +9,71 @@ import (
 // scamper objects
 
 type Tx struct {
-	Sec   int    `json:"sec"`
-	Usec  int    `json:"usec"`
+	Sec   int    `json:"sec,omitempty"`
+	Usec  int    `json:"usec,omitempty"`
 	Ftime string `json:"ftime,omitempty"`
 }
 
 type MPLSLabel struct {
-	MPLSTTL   int `json:"mpls_ttl"`
-	MPLSS     int `json:"mpls_s"`
-	MPLSEXP   int `json:"mpls_exp"`
-	MPLSLabel int `json:"mpls_label"`
+	MPLSTTL   int `json:"mpls_ttl,omitempty"`
+	MPLSS     int `json:"mpls_s,omitempty"`
+	MPLSEXP   int `json:"mpls_exp,omitempty"`
+	MPLSLabel int `json:"mpls_label,omitempty"`
 }
 
 type ICMPExt struct {
-	IECN       int         `json:"ie_cn"`
-	IECT       int         `json:"ie_ct"`
-	IEDL       int         `json:"ie_dl"`
-	MPLSLabels []MPLSLabel `json:"mpls_labels"`
+	IECN       int         `json:"ie_cn,omitempty"`
+	IECT       int         `json:"ie_ct,omitempty"`
+	IEDL       int         `json:"ie_dl,omitempty"`
+	MPLSLabels []MPLSLabel `json:"mpls_labels,omitempty"`
 }
 
 type ScamperHop struct {
-	Addr      string    `json:"addr"`
-	ProbeTTL  int       `json:"probe_ttl"`
-	ProbeID   int       `json:"probe_id"`
-	ProbeSize int       `json:"probe_size"`
-	Tx        Tx        `json:"tx"`
-	RTT       float64   `json:"rtt"`
-	ReplyTTL  int       `json:"reply_ttl"`
-	ReplyTOS  int       `json:"reply_tos"`
-	ReplyIPID int       `json:"reply_ipid"`
-	ReplySize int       `json:"reply_size"`
-	ICMPType  int       `json:"icmp_type"`
-	ICMPCode  int       `json:"icmp_code"`
-	ICMPQTTL  int       `json:"icmp_q_ttl"`
-	ICMPQIPL  int       `json:"icmp_q_ipl"`
-	ICMPQTOS  int       `json:"icmp_q_tos"`
+	Addr      string    `json:"addr,omitempty"`
+	ProbeTTL  int       `json:"probe_ttl,omitempty"`
+	ProbeID   int       `json:"probe_id,omitempty"`
+	ProbeSize int       `json:"probe_size,omitempty"`
+	Tx        Tx        `json:"tx,omitempty"`
+	RTT       float64   `json:"rtt,omitempty"`
+	ReplyTTL  int       `json:"reply_ttl,omitempty"`
+	ReplyTOS  int       `json:"reply_tos,omitempty"`
+	ReplyIPID int       `json:"reply_ipid,omitempty"`
+	ReplySize int       `json:"reply_size,omitempty"`
+	ICMPType  int       `json:"icmp_type,omitempty"`
+	ICMPCode  int       `json:"icmp_code,omitempty"`
+	ICMPQTTL  int       `json:"icmp_q_ttl,omitempty"`
+	ICMPQIPL  int       `json:"icmp_q_ipl,omitempty"`
+	ICMPQTOS  int       `json:"icmp_q_tos,omitempty"`
 	ICMPExts  []ICMPExt `json:"icmpext,omitempty"`
 }
 
 type Trace struct {
-	Type       string       `json:"type"`
-	Version    string       `json:"version"`
-	UserID     int          `json:"userid"`
-	Method     string       `json:"method"`
-	Src        string       `json:"src"`
-	Dst        string       `json:"dst"`
-	Sport      int          `json:"sport"`
-	Dport      int          `json:"dport"`
-	StopReason string       `json:"stop_reason"`
-	StopData   int          `json:"stop_data"`
-	Start      Tx           `json:"start"`
-	HopCount   int          `json:"hop_count"`
-	Attempts   int          `json:"attempts"`
-	HopLimit   int          `json:"hoplimit"`
-	FirstHop   int          `json:"firsthop"`
-	Wait       int          `json:"wait"`
-	WaitProbe  int          `json:"wait_probe"`
-	TOS        int          `json:"tos"`
-	ProbeSize  int          `json:"probe_size"`
-	ProbeCount int          `json:"probe_count"`
-	Hops       []ScamperHop `json:"hops"`
+	Type       string       `json:"type,omitempty"`
+	Version    string       `json:"version,omitempty"`
+	UserID     int          `json:"userid,omitempty"`
+	Method     string       `json:"method,omitempty"`
+	Src        string       `json:"src,omitempty"`
+	Dst        string       `json:"dst,omitempty"`
+	Sport      int          `json:"sport,omitempty"`
+	Dport      int          `json:"dport,omitempty"`
+	StopReason string       `json:"stop_reason,omitempty"`
+	StopData   int          `json:"stop_data,omitempty"`
+	Start      Tx           `json:"start,omitempty"`
+	HopCount   int          `json:"hop_count,omitempty"`
+	Attempts   int          `json:"attempts,omitempty"`
+	HopLimit   int          `json:"hoplimit,omitempty"`
+	FirstHop   int          `json:"firsthop,omitempty"`
+	Wait       int          `json:"wait,omitempty"`
+	WaitProbe  int          `json:"wait_probe,omitempty"`
+	TOS        int          `json:"tos,omitempty"`
+	ProbeSize  int          `json:"probe_size,omitempty"`
+	ProbeCount int          `json:"probe_count,omitempty"`
+	Hops       []ScamperHop `json:"hops,omitempty"`
 }
 
 type Root struct {
-	Data Trace `json:"data"`
+	Data  Trace   `json:"data,omitempty"`
+	MonID *string `json:"mon_id,omitempty"`
 }
 
 /* fin */
@@ -81,7 +82,7 @@ type Root struct {
 
 // Country represents a country with threat level (updated)
 type Country struct {
-	ISO    string  `json:"iso"`
+	ISO    string  `json:"iso,omitempty"`
 	ISO3   *string `json:"iso3,omitempty"`
 	Name   *string `json:"name,omitempty"`
 	Threat *int    `json:"threat,omitempty"`
@@ -90,19 +91,19 @@ type Country struct {
 
 // Group represents a group with optional threat level
 type Group struct {
-	Name   string `json:"name"`
+	Name   string `json:"name,omitempty"`
 	Threat *int   `json:"threat,omitempty"`
 }
 
 // CountryGroup represents the many-to-many relationship between countries and groups
 type CountryGroup struct {
-	Country string `json:"country"`
-	Group   string `json:"group"`
+	Country string `json:"country,omitempty"`
+	Group   string `json:"group,omitempty"`
 }
 
 // ASN represents an Autonomous System Number (updated for response)
 type ASN struct {
-	ASN     int64    `json:"asn"`
+	ASN     int64    `json:"asn,omitempty"`
 	Name    *string  `json:"name,omitempty"`
 	Country *Country `json:"country,omitempty"`
 	Threat  *int     `json:"threat,omitempty"`
@@ -111,7 +112,7 @@ type ASN struct {
 
 // Vendor represents a vendor/organization (updated for response)
 type Vendor struct {
-	ID      int64    `json:"id"`
+	ID      int64    `json:"id,omitempty"`
 	Name    *string  `json:"name,omitempty"`
 	Country *Country `json:"country,omitempty"`
 	Threat  *int     `json:"threat,omitempty"`
@@ -120,8 +121,8 @@ type Vendor struct {
 
 // IPBlock represents an IP address block
 type IPBlock struct {
-	Start         net.IP  `json:"start"`
-	End           net.IP  `json:"end"`
+	Start         net.IP  `json:"start,omitempty"`
+	End           net.IP  `json:"end,omitempty"`
 	ASN           *int64  `json:"asn,omitempty"`
 	ASNMethod     *string `json:"asn_method,omitempty"`
 	Country       *string `json:"country,omitempty"`
@@ -132,12 +133,12 @@ type IPBlock struct {
 
 // Monitor represents a monitoring point (simplified for response)
 type Monitor struct {
-	ID string `json:"id"`
+	ID string `json:"id,omitempty"`
 }
 
 // VantagePoint represents a network vantage point
 type VantagePoint struct {
-	ID         int           `json:"id"`
+	ID         int           `json:"id,omitempty"`
 	IP         *net.IP       `json:"ip,omitempty"`
 	ASN        *int64        `json:"asn,omitempty"`
 	City       *string       `json:"city,omitempty"`
@@ -153,8 +154,8 @@ type VantagePoint struct {
 
 // TraceNode represents a node in a traceroute
 type TraceNode struct {
-	ID       int     `json:"id"`
-	IP       net.IP  `json:"ip"`
+	ID       int     `json:"id,omitempty"`
+	IP       net.IP  `json:"ip,omitempty"`
 	Hostname *string `json:"hostname,omitempty"`
 	ASN      *int    `json:"asn,omitempty"`
 	OrgName  *string `json:"org_name,omitempty"`
@@ -164,9 +165,9 @@ type TraceNode struct {
 
 // TraceHop represents a hop in a traceroute
 type TraceHop struct {
-	TraceID    int           `json:"trace_id"`
-	ProbeTTL   int           `json:"probe_ttl"`
-	IP         net.IP        `json:"ip"`
+	TraceID    int           `json:"trace_id,omitempty"`
+	ProbeTTL   int           `json:"probe_ttl,omitempty"`
+	IP         net.IP        `json:"ip,omitempty"`
 	ASN        *int64        `json:"asn,omitempty"`
 	ASNMethod  *string       `json:"asn_method,omitempty"`
 	ISO        *string       `json:"iso,omitempty"`
@@ -179,12 +180,12 @@ type TraceHop struct {
 
 // Traceroute represents a complete traceroute
 type Traceroute struct {
-	ID            int                    `json:"id"`
-	Src           net.IP                 `json:"src"`
-	Dst           net.IP                 `json:"dst"`
+	ID            int                    `json:"id,omitempty"`
+	Src           net.IP                 `json:"src,omitempty"`
+	Dst           net.IP                 `json:"dst,omitempty"`
 	SrcAnnotation *IPAnnotation          `json:"src_annotation,omitempty"`
 	DstAnnotation *IPAnnotation          `json:"dst_annotation,omitempty"`
-	TraceHops     []TraceHop             `json:"tracehops"`
+	TraceHops     []TraceHop             `json:"tracehops,omitempty"`
 	MonID         *string                `json:"mon_id,omitempty"`
 	VPID          *int                   `json:"vp_id,omitempty"`
 	SrcASN        *int64                 `json:"src_asn,omitempty"`
@@ -206,58 +207,58 @@ type Traceroute struct {
 	Threat        *int                   `json:"threat,omitempty"`
 	Data          map[string]interface{} `json:"data,omitempty"`
 	VP            *VantagePoint          `json:"vp,omitempty"`
-	TimeCreated   time.Time              `json:"time_created"`
-	TimeModified  time.Time              `json:"time_modified"`
-	Errors        []string               `json:"errors"`
-	Finished      bool                   `json:"finished"`
+	TimeCreated   time.Time              `json:"time_created,omitempty"`
+	TimeModified  time.Time              `json:"time_modified,omitempty"`
+	Errors        []string               `json:"errors,omitempty"`
+	Finished      bool                   `json:"finished,omitempty"`
 }
 
 // TraceSet represents a set of traceroutes
 type TraceSet struct {
-	ID           int       `json:"id"`
+	ID           int       `json:"id,omitempty"`
 	Name         *string   `json:"name,omitempty"`
 	Creator      *string   `json:"creator,omitempty"`
-	TimeCreated  time.Time `json:"time_created"`
-	TimeModified time.Time `json:"time_modified"`
-	Tags         []string  `json:"tags"`
-	Finished     bool      `json:"finished"`
-	Errors       []string  `json:"errors"`
+	TimeCreated  time.Time `json:"time_created,omitempty"`
+	TimeModified time.Time `json:"time_modified,omitempty"`
+	Tags         []string  `json:"tags,omitempty"`
+	Finished     bool      `json:"finished,omitempty"`
+	Errors       []string  `json:"errors,omitempty"`
 }
 
 // TraceSetTraceroute represents the relationship between trace sets and traceroutes
 type TraceSetTraceroute struct {
-	SetID   int `json:"set_id"`
-	TraceID int `json:"trace_id"`
+	SetID   int `json:"set_id,omitempty"`
+	TraceID int `json:"trace_id,omitempty"`
 }
 
 // TraceSetTraceInfo represents additional info for traces in a set
 type TraceSetTraceInfo struct {
-	SetID       int    `json:"set_id"`
-	TraceID     int    `json:"trace_id"`
-	Description string `json:"description"`
+	SetID       int    `json:"set_id,omitempty"`
+	TraceID     int    `json:"trace_id,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 // TraceSetCurated represents curated trace sets
 type TraceSetCurated struct {
-	SetID int `json:"set_id"`
+	SetID int `json:"set_id,omitempty"`
 }
 
 // MonDstTraceroute represents the relationship between monitors and destination traceroutes
 type MonDstTraceroute struct {
-	Dst   string `json:"dst"`
-	Trace int    `json:"trace"`
+	Dst   string `json:"dst,omitempty"`
+	Trace int    `json:"trace,omitempty"`
 }
 
 // TracerouteNode represents the relationship between traceroutes and nodes
 type TracerouteNode struct {
-	Hop   int `json:"hop"`
-	Trace int `json:"trace"`
-	Node  int `json:"node"`
+	Hop   int `json:"hop,omitempty"`
+	Trace int `json:"trace,omitempty"`
+	Node  int `json:"node,omitempty"`
 }
 
 // IPAnnotation represents IP address annotations
 type IPAnnotation struct {
-	IP           net.IP         `json:"ip"`
+	IP           net.IP         `json:"ip,omitempty"`
 	TraceHops    []TraceHop     `json:"tracehops,omitempty"`
 	VPs          []VantagePoint `json:"vps,omitempty"`
 	Vendor       *Vendor        `json:"vendor,omitempty"`
@@ -282,18 +283,18 @@ type IPAnnotation struct {
 	GeoMethod    *string        `json:"geo_method,omitempty"`
 	ArkVP        *string        `json:"ark_vp,omitempty"`
 	ArkRTT       *float64       `json:"ark_rtt,omitempty"`
-	TimeCreated  time.Time      `json:"time_created"`
-	TimeModified time.Time      `json:"time_modified"`
-	Finished     bool           `json:"finished"`
+	TimeCreated  time.Time      `json:"time_created,omitempty"`
+	TimeModified time.Time      `json:"time_modified,omitempty"`
+	Finished     bool           `json:"finished,omitempty"`
 }
 
 // Suggestion represents search suggestions
 type Suggestion struct {
-	Key          string `json:"key"`
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	NumAddresses int    `json:"num_addresses"`
+	Key          string `json:"key,omitempty"`
+	ID           string `json:"id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Type         string `json:"type,omitempty"`
+	NumAddresses int    `json:"num_addresses,omitempty"`
 }
 
 // Organization represents organization information (updated)
@@ -304,8 +305,8 @@ type Organization struct {
 
 // Reserved represents reserved IP information (updated)
 type Reserved struct {
-	Name    string `json:"name"`
-	Network string `json:"nework"` // Note: keeping "nework" to match the JSON typo
+	Name    string `json:"name,omitempty"`
+	Network string `json:"network,omitempty"`
 }
 
 // ArkPing represents ARK ping information (updated)
@@ -326,21 +327,21 @@ type Geo struct {
 
 // PathfinderHop represents a hop in a pathfinder trace (from original code)
 type PathfinderHop struct {
-	IP           string       `json:"ip"`
-	ProbeTTL     int          `json:"probe_ttl"`
-	ASN          ASN          `json:"asn"`
+	IP           string       `json:"ip,omitempty"`
+	ProbeTTL     int          `json:"probe_ttl,omitempty"`
+	ASN          ASN          `json:"asn,omitempty"`
 	Country      Country      `json:"country,omitempty"`
-	Organization Organization `json:"organization"`
+	Organization Organization `json:"organization,omitempty"`
 	Reserved     Reserved     `json:"reserved,omitempty"`
 	ArkPing      ArkPing      `json:"arkping,omitempty"`
 	Geo          Geo          `json:"geo,omitempty"`
 	Hostname     string       `json:"hostname,omitempty"`
-	Threat       int          `json:"threat"`
+	Threat       int          `json:"threat,omitempty"`
 }
 
 // IPEndpoint represents an IP endpoint with all possible annotation fields
 type IPEndpoint struct {
-	IP           string        `json:"ip"`
+	IP           string        `json:"ip,omitempty"`
 	Reserved     *Reserved     `json:"reserved,omitempty"`
 	ASN          *ASN          `json:"asn,omitempty"`
 	Country      *Country      `json:"country,omitempty"`
@@ -353,7 +354,7 @@ type IPEndpoint struct {
 
 // TracerouteHop represents a hop in the traceroute response
 type TracerouteHop struct {
-	IP           string        `json:"ip"`
+	IP           string        `json:"ip,omitempty"`
 	Hostname     *string       `json:"hostname,omitempty"`
 	Reserved     *Reserved     `json:"reserved,omitempty"`
 	ASN          *ASN          `json:"asn,omitempty"`
@@ -363,40 +364,40 @@ type TracerouteHop struct {
 	ArkPing      *ArkPing      `json:"arkping,omitempty"`
 	Geo          *Geo          `json:"geo,omitempty"`
 	Threat       *int          `json:"threat,omitempty"`
-	ProbeTTL     int           `json:"probe_ttl"`
+	ProbeTTL     int           `json:"probe_ttl,omitempty"`
 }
 
 // Data represents the main data structure (updated for complete response)
 type Data struct {
-	ID           int             `json:"id"`
-	Src          IPEndpoint      `json:"src"`
-	Dst          IPEndpoint      `json:"dst"`
+	ID           int             `json:"id,omitempty"`
+	Src          IPEndpoint      `json:"src,omitempty"`
+	Dst          IPEndpoint      `json:"dst,omitempty"`
 	Monitor      *Monitor        `json:"monitor,omitempty"`
-	Hops         []TracerouteHop `json:"hops"`
+	Hops         []TracerouteHop `json:"hops,omitempty"`
 	Threat       *int            `json:"threat,omitempty"`
-	Finished     bool            `json:"finished"`
-	TimeCreated  time.Time       `json:"time_created"`
-	TimeModified time.Time       `json:"time_modified"`
-	Errors       []string        `json:"errors"`
+	Finished     bool            `json:"finished,omitempty"`
+	TimeCreated  time.Time       `json:"time_created,omitempty"`
+	TimeModified time.Time       `json:"time_modified,omitempty"`
+	Errors       []string        `json:"errors,omitempty"`
 }
 
 // Response represents the API response structure (updated for complete JSON)
 type Response struct {
-	TotalCount int      `json:"totalCount"`
-	PageSize   int      `json:"pageSize"`
-	Page       int      `json:"page"`
-	Data       []Data   `json:"data"`
-	Errors     []string `json:"errors"`
+	TotalCount int      `json:"totalCount,omitempty"`
+	PageSize   int      `json:"pageSize,omitempty"`
+	Page       int      `json:"page,omitempty"`
+	Data       []Data   `json:"data,omitempty"`
+	Errors     []string `json:"errors,omitempty"`
 }
 
 // PFObj represents a pathfinder object (reverted to original)
 type PFObj struct {
-	Data   []int    `json:"data"`
-	Errors []string `json:"errors"`
+	Data   []int    `json:"data,omitempty"`
+	Errors []string `json:"errors,omitempty"`
 }
 
 type TraceReq struct {
-	Name    string   `json:"name"`
-	Creator string   `json:"creator"`
-	Tags    []string `json:"tags"`
+	Name    string   `json:"name,omitempty"`
+	Creator string   `json:"creator,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
 }

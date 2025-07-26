@@ -93,9 +93,16 @@ func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger, ignor
 	return true, responseData2, nil
 }
 
-func SubmitTraceRoute(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, int, error) {
+func SubmitTraceRoute(
+	endpoint, apiKey, srcAnnotated string, requestData []byte, logger *logrus.Logger, ignoreCerts bool,
+) (bool, int, error) {
 
 	jsonData := "[{\"data\":" + string(requestData) + "}]"
+	if srcAnnotated != "" {
+		jsonData = fmt.Sprintf("[{\"data\": %s, \"mon_id\": \"%s\"}]",
+			string(requestData), srcAnnotated,
+		)
+	}
 
 	var roots []objects.Root
 	err := json.Unmarshal([]byte(jsonData), &roots)
@@ -186,7 +193,7 @@ func SubmitTraceRoute(endpoint, apiKey string, requestData []byte, logger *logru
 }
 
 func SubmitTraceSetRequest(
-	endpoint, apiKey, creator string, tags []string, logger *logrus.Logger,
+	endpoint, apiKey, creator string, tags []string, logger *logrus.Logger, ignoreCerts bool,
 ) (bool, int, error) {
 	obj := &objects.TraceReq{
 		Name:    creator,
@@ -221,7 +228,13 @@ func SubmitTraceSetRequest(
 	}
 
 	// Send our request
-	client := &http.Client{}
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: ignoreCerts,
+			},
+		},
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, 0, err
@@ -270,8 +283,9 @@ func SubmitTraceSetRequest(
 	return true, code, nil
 }
 
-func SendTraceRouteRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, error) {
-	ok, code, err := SubmitTraceRoute(endpoint, apiKey, requestData, logger, ignoreCerts)
+/*
+func SendTraceRouteRequest(endpoint, apiKey, srcAnnotated string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, error) {
+	ok, code, err := SubmitTraceRoute(endpoint, apiKey, srcAnnotated, requestData, logger, ignoreCerts)
 	if err != nil {
 		return false, err
 	}
@@ -290,11 +304,12 @@ func SendTraceRouteRequest(endpoint, apiKey string, requestData []byte, logger *
 
 	return ok, nil
 }
+*/
 
-func SendTraceSetRequest(endpoint, apiKey, creator string, tags []string, logger *logrus.Logger) (int, error) {
+func SendTraceSetRequest(endpoint, apiKey, creator string, tags []string, logger *logrus.Logger, ignoreCerts bool) (int, error) {
 
 	ok, tracker, err := SubmitTraceSetRequest(
-		endpoint, apiKey, creator, tags, logger,
+		endpoint, apiKey, creator, tags, logger, ignoreCerts,
 	)
 	if err != nil {
 		return 0, err
