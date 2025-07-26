@@ -2,12 +2,12 @@ package pathfinder
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
-	"crypto/tls"
 
 	"github.com/isi-lincoln/scamper-comms/objects"
 	"github.com/sirupsen/logrus"
@@ -93,7 +93,7 @@ func Query(endpoint, apiKey string, identifier int, logger *logrus.Logger, ignor
 	return true, responseData2, nil
 }
 
-func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, int, error) {
+func SubmitTraceRoute(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, int, error) {
 
 	jsonData := "[{\"data\":" + string(requestData) + "}]"
 
@@ -185,9 +185,93 @@ func Submit(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, 
 	return true, code, nil
 }
 
-func SendRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, error) {
+func SubmitTraceSetRequest(
+	endpoint, apiKey, creator string, tags []string, logger *logrus.Logger,
+) (bool, int, error) {
+	obj := &objects.TraceReq{
+		Name:    creator,
+		Creator: creator,
+		Tags:    tags,
+	}
 
-	ok, code, err := Submit(endpoint, apiKey, requestData, logger, ignoreCerts)
+	backToByte, err := json.Marshal(obj)
+	if err != nil {
+		return false, 0, err
+	}
+
+	if logger != nil {
+		logger.Debugf("Endpoint: %s, %#v", endpoint, obj)
+	}
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(backToByte))
+	if err != nil {
+		return false, 0, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("pathfinder-key", apiKey)
+
+	if logger.GetLevel() == logrus.DebugLevel {
+		reqDump, err := httputil.DumpRequestOut(req, true)
+		if err != nil {
+			logger.Debugf("Error dumping request: %v\n", err)
+			return false, 0, err
+		}
+		logger.Debugf("HTTP Request:\n%s\n", string(reqDump))
+	}
+
+	// Send our request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, 0, err
+	}
+	defer resp.Body.Close()
+
+	if logger != nil {
+		logger.Debugf("Response code: %d\n", resp.StatusCode)
+	}
+
+	// return code is a StatusCreated
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return false, 0, fmt.Errorf("Http POST failed with status code: %d", resp.StatusCode)
+	}
+
+	// The response code is an array of uuids for the traces
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, 0, err
+	}
+
+	if logger != nil {
+		logger.Debugf("Response:\n%s", string(body))
+	}
+
+	// {"totalCount":1,"pageSize":1,"page":0,"data":[{"id":106,"name":"blah","creator":"blah","tags":["lt-dev-blah"],"finished":false,"errors":[],"time_created":"2025-07-25T21:27:05.480451Z","time_modified":"2025-07-25T21:27:05.480451Z"}],"errors":[]}
+	responseData := &objects.Response{}
+	err = json.Unmarshal(body, &responseData)
+	if err != nil {
+		return false, 0, err
+	}
+
+	d := responseData.Data
+	code := 0
+	for _, c := range d {
+		code = int(c.ID)
+	}
+	if len(responseData.Errors) > 0 {
+		return false, 0, fmt.Errorf("pathfinder returned error: %v", responseData.Errors)
+	}
+
+	if logger != nil {
+		logger.Debugf("Tracking Code: %d\n", code)
+	}
+
+	return true, code, nil
+}
+
+func SendTraceRouteRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Logger, ignoreCerts bool) (bool, error) {
+	ok, code, err := SubmitTraceRoute(endpoint, apiKey, requestData, logger, ignoreCerts)
 	if err != nil {
 		return false, err
 	}
@@ -205,4 +289,19 @@ func SendRequest(endpoint, apiKey string, requestData []byte, logger *logrus.Log
 	}
 
 	return ok, nil
+}
+
+func SendTraceSetRequest(endpoint, apiKey, creator string, tags []string, logger *logrus.Logger) (int, error) {
+
+	ok, tracker, err := SubmitTraceSetRequest(
+		endpoint, apiKey, creator, tags, logger,
+	)
+	if err != nil {
+		return 0, err
+	}
+	if !ok {
+		return 0, fmt.Errorf("got a bad value: %d", tracker)
+	}
+
+	return tracker, nil
 }

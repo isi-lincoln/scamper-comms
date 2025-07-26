@@ -12,13 +12,14 @@ import (
 )
 
 var (
-	server    string
-	port      int
-	format    string
-	fiPath    string
-	threshold int
+	server      string
+	port        int
+	format      string
+	fiPath      string
+	threshold   int
 	ignoreCerts bool
-	logLevel  string
+	traceSetID  int
+	logLevel    string
 )
 
 func main() {
@@ -60,13 +61,20 @@ func main() {
 	scamper.Flags().StringVarP(&format, "format", "f", "json", "format scamper output (json, warts)")
 	scamper.Flags().StringVarP(&fiPath, "output", "o", "", "write output to a file")
 
-	var pathfinder = &cobra.Command{
-		Use:   "pathfinder <api key> <file>",
-		Short: "pathfinder -t 3 <api key> <file>",
+	var pfCmd = &cobra.Command{
+		Use:   "pathfinder",
+		Short: "do pathfinder things",
+	}
+	root.AddCommand(pfCmd)
+
+	var traceroute = &cobra.Command{
+		Use:   "traceroute <api key> <file>",
+		Short: "traceroute -t 3 <api key> <file>",
 		Long:  "send scamper output json file to pathfinder api service",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			defaultEndpoint := "https://api.pathfinder.caida.org/v1/traceroutes"
+			defaultTraceRouteEndpoint := "https://api.pathfinder.caida.org/v1/traceroutes"
+			withTraceSet := fmt.Sprintf("%s?traceset_id=%d", defaultTraceRouteEndpoint, traceSetID)
 
 			if args[0] == "" {
 				log.Fatalf("pathfinder requires an api key\n")
@@ -83,10 +91,19 @@ func main() {
 				logger.SetLevel(logrus.DebugLevel)
 			}
 
-			ready, err := pathfinder.SendRequest(defaultEndpoint, args[0], requestData, logger, ignoreCerts)
+			ep := defaultTraceRouteEndpoint
+			if traceSetID != 0 {
+				ep = withTraceSet
+			}
+
+			ready, err := pathfinder.SendTraceRouteRequest(
+				ep, args[0], requestData, logger, ignoreCerts,
+			)
+
 			if err != nil {
 				log.Fatal(err)
 			}
+
 			if ready {
 				log.Infof("You can query endpoint")
 			} else {
@@ -94,9 +111,53 @@ func main() {
 			}
 		},
 	}
-	pathfinder.Flags().IntVarP(&threshold, "threshold", "t", 5, "threshold of the threat level")
-	pathfinder.Flags().BoolVarP(&ignoreCerts, "ignore-certs", "i", false, "ignore pathfinder server certificates")
-	root.AddCommand(pathfinder)
+	traceroute.Flags().BoolVarP(&ignoreCerts, "ignore-certs", "i", false, "ignore pathfinder server certificates")
+	traceroute.Flags().IntVarP(&threshold, "threshold", "t", 5, "threshold of the threat level")
+	traceroute.Flags().IntVarP(&traceSetID, "traceset", "s", 0, "submit traceroute to a traceset")
+	pfCmd.AddCommand(traceroute)
+
+	var traceSet = &cobra.Command{
+		Use:   "traceset <api key> <creator> <[tags,]>",
+		Short: "traceset <api key> <creator> <tags...>",
+		Long:  "create a traceset id from a tag",
+		Args:  cobra.MinimumNArgs(3),
+		Run: func(cmd *cobra.Command, args []string) {
+			defaultTraceSetEndpoint := "https://api.pathfinder.caida.org/v1/tracesets"
+
+			if args[0] == "" {
+				log.Fatalf("pathfinder requires an api key\n")
+			}
+
+			if args[1] == "" {
+				log.Fatalf("traceset creator missing\n")
+			}
+
+			tags := args[2:]
+			if args[2] == "" {
+				log.Fatalf("traceset tag missing\n")
+			}
+
+			logger := logrus.New()
+			logger.SetLevel(logrus.InfoLevel)
+			if logLevel == "debug" {
+				logger.SetLevel(logrus.DebugLevel)
+			}
+
+			traceId, err := pathfinder.SendTraceSetRequest(
+				defaultTraceSetEndpoint,
+				args[0],
+				args[1],
+				tags,
+				logger,
+			)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Infof("traceset id created: %d", traceId)
+		},
+	}
+	pfCmd.AddCommand(traceSet)
 
 	err := root.Execute()
 	if err != nil {

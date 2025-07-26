@@ -394,3 +394,9 @@ type PFObj struct {
 	Data   []int    `json:"data"`
 	Errors []string `json:"errors"`
 }
+
+type TraceReq struct {
+	Name    string   `json:"name"`
+	Creator string   `json:"creator"`
+	Tags    []string `json:"tags"`
+}
